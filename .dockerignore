@@ -1,0 +1,11 @@
+.git
+**/__pycache__
+**/*.pyc
+.venv
+venv
+.env
+.env.*
+data-simulator/polygons/requierments.txt
+flight-simulator/Dockerfile
+data-simulator/polygons/Dockerfile
+agent-tools
