@@ -56,8 +56,6 @@ def _run_worker(name: str, stop_event: threading.Event, target: WorkerTarget) ->
         target()
     except Exception as exc:
         print(f"{name} stopped unexpectedly: {exc}")
-        stop_event.set()
-        raise
 
 
 def main() -> None:
@@ -103,13 +101,18 @@ def main() -> None:
     for thread in threads:
         thread.start()
 
+    reported_stopped_workers: set[str] = set()
+
     try:
         while not stop_event.is_set():
-            stopped_workers = [thread.name for thread in threads if not thread.is_alive()]
-            if stopped_workers:
-                raise RuntimeError(
-                    f"Worker threads stopped unexpectedly: {', '.join(stopped_workers)}"
-                )
+            stopped_workers = [
+                thread.name
+                for thread in threads
+                if not thread.is_alive() and thread.name not in reported_stopped_workers
+            ]
+            for worker_name in stopped_workers:
+                print(f"Worker exited and will not stop the rest of the app: {worker_name}")
+                reported_stopped_workers.add(worker_name)
 
             time.sleep(1)
     except KeyboardInterrupt:

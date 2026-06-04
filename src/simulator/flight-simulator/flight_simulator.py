@@ -6,6 +6,8 @@ import time
 
 import redis
 
+REDIS_RETRY_SECONDS = float(os.getenv("REDIS_RETRY_SECONDS", "5"))
+
 
 def _redis_client() -> redis.Redis:
     return redis.Redis(
@@ -21,24 +23,35 @@ def advance_drone_step(
     flight_id: str,
     interval_seconds: float,
 ) -> None:
-    r = _redis_client()
-    flight_key = f"flight:{flight_id}"
-    raw_flight_data = r.get(flight_key)
+    try:
+        r = _redis_client()
+        flight_key = f"flight:{flight_id}"
+        raw_flight_data = r.get(flight_key)
 
-    if not raw_flight_data:
-        print(f"[{time.strftime('%X')}] Flight {flight_id}: data not found, retrying later.")
+        if not raw_flight_data:
+            print(f"[{time.strftime('%X')}] Flight {flight_id}: data not found, retrying later.")
+            scheduler_instance.enter(
+                interval_seconds,
+                1,
+                advance_drone_step,
+                (scheduler_instance, flight_id, interval_seconds),
+            )
+            return
+
+        flight_data = json.loads(raw_flight_data)
+        path_coords = flight_data.get("path", [])
+        current_location = flight_data.get("current_location")
+    except redis.exceptions.RedisError as exc:
+        print(
+            f"[{time.strftime('%X')}] Flight {flight_id}: Redis unavailable ({exc}). Retrying later."
+        )
         scheduler_instance.enter(
-            interval_seconds,
+            REDIS_RETRY_SECONDS,
             1,
             advance_drone_step,
             (scheduler_instance, flight_id, interval_seconds),
         )
         return
-
-    try:
-        flight_data = json.loads(raw_flight_data)
-        path_coords = flight_data.get("path", [])
-        current_location = flight_data.get("current_location")
     except (json.JSONDecodeError, TypeError):
         print(f"[{time.strftime('%X')}] Flight {flight_id}: error parsing JSON.")
         scheduler_instance.enter(
@@ -109,7 +122,6 @@ def run_single_drone_thread(flight_id: str, interval_seconds: float) -> None:
 
 
 def track_all_flights(interval_seconds: float, stop_event=None) -> None:
-    r = _redis_client()
     tracked_flight_ids: set[str] = set()
 
     try:
@@ -117,10 +129,19 @@ def track_all_flights(interval_seconds: float, stop_event=None) -> None:
             print("Scanning Redis for active flights...")
             flight_ids = set()
 
-            for key in r.scan_iter(match="flight:*"):
-                parts = key.split(":")
-                if len(parts) >= 2:
-                    flight_ids.add(parts[1])
+            try:
+                for key in _redis_client().scan_iter(match="flight:*"):
+                    parts = key.split(":")
+                    if len(parts) >= 2:
+                        flight_ids.add(parts[1])
+            except redis.exceptions.RedisError as exc:
+                print(f"Flight tracker: Redis unavailable ({exc}). Retrying later.")
+                if stop_event is not None:
+                    if stop_event.wait(REDIS_RETRY_SECONDS):
+                        break
+                else:
+                    time.sleep(REDIS_RETRY_SECONDS)
+                continue
 
             new_flight_ids = sorted(flight_ids - tracked_flight_ids)
             if not new_flight_ids:

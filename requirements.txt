@@ -1,5 +1,5 @@
 redis>=5.0.0,<6
-flask>=3.0.0,<4
+Flask>=2.3
 psycopg2-binary==2.9.12
 kafka-python==2.2.15
 annotated-types==0.7.0
