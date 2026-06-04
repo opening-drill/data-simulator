@@ -1,4 +1,5 @@
 import sys
+import logging
 from pathlib import Path
 
 
@@ -17,3 +18,7 @@ def ensure_project_root_on_path(current_file: str | Path, root_parent_index: int
 def configure_runtime(current_file: str | Path, root_parent_index: int) -> None:
     disable_bytecode_writes()
     ensure_project_root_on_path(current_file, root_parent_index)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )

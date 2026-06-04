@@ -3,6 +3,7 @@ import json
 import sys
 import threading
 import time
+import logging
 from collections.abc import Callable
 from pathlib import Path
 
@@ -20,6 +21,8 @@ from src.utils import configure_runtime
 
 configure_runtime(__file__, 1)
 
+logger = logging.getLogger(__name__)
+
 WorkerTarget = Callable[[], None]
 
 
@@ -30,11 +33,11 @@ def run_dispatch_worker(stop_event: threading.Event) -> None:
     while not stop_event.is_set():
         try:
             simulation_output = run_simulator()
-            print(json.dumps(simulation_output, indent=output_indent))
+            logger.info(json.dumps(simulation_output, indent=output_indent))
             dispatch_response = dispatch_simulation_payloads(simulation_output)
-            print(json.dumps(dispatch_response, indent=output_indent))
+            logger.info(json.dumps(dispatch_response, indent=output_indent))
         except Exception as exc:
-            print(f"Simulation iteration failed: {exc}")
+            logger.exception("Simulation iteration failed")
 
         if stop_event.wait(interval_seconds):
             break
@@ -52,15 +55,15 @@ def _load_module(module_name: str, module_path: Path):
 
 def _run_worker(name: str, stop_event: threading.Event, target: WorkerTarget) -> None:
     try:
-        print(f"Starting {name}.")
+        logger.info("Starting %s.", name)
         target()
     except Exception as exc:
-        print(f"{name} stopped unexpectedly: {exc}")
+        logger.exception("%s stopped unexpectedly", name)
 
 
 def main() -> None:
     env_path = load_project_env()
-    print(f"Loaded environment from {env_path}")
+    logger.info("Loaded environment from %s", env_path)
 
     polygon_module = _load_module(
         "polygon_worker_module",
@@ -111,12 +114,15 @@ def main() -> None:
                 if not thread.is_alive() and thread.name not in reported_stopped_workers
             ]
             for worker_name in stopped_workers:
-                print(f"Worker exited and will not stop the rest of the app: {worker_name}")
+                logger.warning(
+                    "Worker exited and will not stop the rest of the app: %s",
+                    worker_name,
+                )
                 reported_stopped_workers.add(worker_name)
 
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Stopping simulator workers.")
+        logger.info("Stopping simulator workers.")
     finally:
         stop_event.set()
         for thread in threads:
