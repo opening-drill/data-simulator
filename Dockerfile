@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
+COPY --chown=appuser:appuser flask_server.py /app/
 COPY --chown=appuser:appuser flight-simulator/flight_simulator.py /app/flight-simulator/
 COPY --chown=appuser:appuser data-simulator/polygons/generate_polygon.py /app/data-simulator/polygons/
 
@@ -30,6 +31,10 @@ RUN chmod +x /app/entrypoint.sh
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV FLASK_HOST=0.0.0.0
+ENV FLASK_PORT=5000
+
+EXPOSE 5000
 
 USER appuser
 
