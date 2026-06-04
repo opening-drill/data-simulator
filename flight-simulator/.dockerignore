@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Python virtual environments and caches
+.venv
+venv
+ENV
+env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker / Local logs
+Docker*.log
+docker-compose*.yml
+.dockerignore
+Dockerfile
+
+# OS specific files
+.DS_Store
+Thumbs.db

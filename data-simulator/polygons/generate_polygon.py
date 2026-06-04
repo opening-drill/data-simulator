@@ -1,3 +1,4 @@
+import os
 import random
 import uuid
 import logging
@@ -13,20 +14,27 @@ from typing import List, Tuple, Literal
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# API Configuration
-API_BASE_URL = "https://666skt42-3000.uks1.devtunnels.ms/api/polygons"
-API_KEY = "adminkey123456789"
+# API Configuration (override via .env / docker-compose)
+API_BASE_URL = os.getenv(
+    "API_BASE_URL",
+    "https://666skt42-3000.uks1.devtunnels.ms/api/polygons",
+)
+API_KEY = os.getenv("API_KEY", "adminkey123456789")
+POLYGON_INTERVAL_SECONDS = int(os.getenv("POLYGON_INTERVAL_SECONDS", "30"))
+POLYGON_EXPIRY_MINUTES = int(os.getenv("POLYGON_EXPIRY_MINUTES", "3"))
 
 # Authentication Headers
 HEADERS = {
     "Content-Type": "application/json",
     "x-api-key": API_KEY,
-    "Authorization": f"Bearer {API_KEY}"
+    "Authorization": f"Bearer {API_KEY}",
 }
 
 # Coordinate Boundaries (Mediterranean Sea, Israel, and Gaza)
-TOTAL_MIN_LON, TOTAL_MAX_LON = 33.50, 35.90
-TOTAL_MIN_LAT, TOTAL_MAX_LAT = 29.45, 33.30
+TOTAL_MIN_LON = float(os.getenv("TOTAL_MIN_LON", "33.50"))
+TOTAL_MAX_LON = float(os.getenv("TOTAL_MAX_LON", "35.90"))
+TOTAL_MIN_LAT = float(os.getenv("TOTAL_MIN_LAT", "29.45"))
+TOTAL_MAX_LAT = float(os.getenv("TOTAL_MAX_LAT", "33.30"))
 
 # In-memory database tracking active shapes to prevent overlaps
 active_polygons = []
@@ -139,7 +147,7 @@ def generate_and_save_forbidden_polygon():
         return
 
     now = datetime.now()
-    expiry = now + timedelta(minutes=3)
+    expiry = now + timedelta(minutes=POLYGON_EXPIRY_MINUTES)
     matched_zone = classify_zone_by_coordinates(shapely_poly.centroid.x, shapely_poly.centroid.y)
     
     polygon_id = str(uuid.uuid4())
@@ -186,13 +194,16 @@ def generate_and_save_forbidden_polygon():
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
     scheduler.add_job(
-        func=generate_and_save_forbidden_polygon, 
-        trigger="interval", 
-        seconds=30
+        func=generate_and_save_forbidden_polygon,
+        trigger="interval",
+        seconds=POLYGON_INTERVAL_SECONDS,
     )
-    
+
     scheduler.start()
-    logger.info("--- Background task runner initialized! Dispatching polygons every 30 seconds ---")
+    logger.info(
+        "--- Background task runner initialized! Dispatching polygons every %s seconds ---",
+        POLYGON_INTERVAL_SECONDS,
+    )
     
     try:
         while True:
