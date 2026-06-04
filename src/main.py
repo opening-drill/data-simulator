@@ -14,6 +14,7 @@ from flask_server import run_server
 
 from src.config import get_json_output_indent, get_simulation_interval_seconds
 from src.env_loader import load_project_env
+from src.services.redis import describe_redis_target, ping_redis
 from src.simulator.user_simulator.simulator_runner import run_simulator
 from src.services.api import dispatch_simulation_payloads
 from src.utils import configure_runtime
@@ -61,6 +62,12 @@ def _run_worker(name: str, stop_event: threading.Event, target: WorkerTarget) ->
 def main() -> None:
     env_path = load_project_env()
     print(f"Loaded environment from {env_path}")
+    print(f"Redis target: {describe_redis_target()}")
+    try:
+        if ping_redis():
+            print("Redis connection OK")
+    except Exception as exc:
+        print(f"Redis connection failed: {exc}")
 
     polygon_module = _load_module(
         "polygon_worker_module",

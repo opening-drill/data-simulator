@@ -10,6 +10,11 @@ from src.config.constants import (
     DEFAULT_POSTGRES_POLYGON_TABLE,
     DEFAULT_POSTGRES_PORT,
     DEFAULT_POSTGRES_SCHEMA,
+    DEFAULT_REDIS_CONNECT_TIMEOUT_SECONDS,
+    DEFAULT_REDIS_HOST,
+    DEFAULT_REDIS_PORT,
+    DEFAULT_REDIS_RETRY_SECONDS,
+    DEFAULT_REDIS_SOCKET_TIMEOUT_SECONDS,
     DEFAULT_SIMULATION_FLIGHT_COUNT,
     DEFAULT_SIMULATION_INTERVAL_SECONDS,
     DEFAULT_UNUSED_EVENT_ID_MAX_ATTEMPTS,
@@ -29,6 +34,15 @@ from src.config.constants import (
     ENV_POSTGRES_SCHEMA,
     ENV_POSTGRES_SSLMODE,
     ENV_POSTGRES_USER,
+    ENV_REDIS_CONNECT_TIMEOUT_SECONDS,
+    ENV_REDIS_HOST,
+    ENV_REDIS_PASSWORD,
+    ENV_REDIS_PORT,
+    ENV_REDIS_RETRY_SECONDS,
+    ENV_REDIS_SOCKET_TIMEOUT_SECONDS,
+    ENV_REDIS_SSL,
+    ENV_REDIS_URL,
+    ENV_REDIS_USERNAME,
     ENV_SIMULATION_FLIGHT_COUNT,
     ENV_SIMULATION_INTERVAL_SECONDS,
     ENV_UNUSED_EVENT_ID_MAX_ATTEMPTS,
@@ -124,6 +138,55 @@ def get_simulation_flight_count() -> int:
         ENV_SIMULATION_FLIGHT_COUNT,
         DEFAULT_SIMULATION_FLIGHT_COUNT,
     )
+
+
+def get_redis_connect_timeout_seconds() -> float:
+    return get_env_float(
+        ENV_REDIS_CONNECT_TIMEOUT_SECONDS,
+        DEFAULT_REDIS_CONNECT_TIMEOUT_SECONDS,
+    )
+
+
+def get_redis_host() -> str:
+    return get_env_str(ENV_REDIS_HOST, DEFAULT_REDIS_HOST)
+
+
+def get_redis_password() -> str | None:
+    value = os.getenv(ENV_REDIS_PASSWORD)
+    return value if value else None
+
+
+def get_redis_port() -> int:
+    return get_env_int(ENV_REDIS_PORT, DEFAULT_REDIS_PORT)
+
+
+def get_redis_retry_seconds() -> float:
+    return get_env_float(ENV_REDIS_RETRY_SECONDS, DEFAULT_REDIS_RETRY_SECONDS)
+
+
+def get_redis_socket_timeout_seconds() -> float:
+    return get_env_float(
+        ENV_REDIS_SOCKET_TIMEOUT_SECONDS,
+        DEFAULT_REDIS_SOCKET_TIMEOUT_SECONDS,
+    )
+
+
+def get_redis_ssl_enabled() -> bool:
+    return os.getenv(ENV_REDIS_SSL, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def get_redis_url() -> str | None:
+    value = os.getenv(ENV_REDIS_URL)
+    return value.strip() if value else None
+
+
+def get_redis_username() -> str | None:
+    value = os.getenv(ENV_REDIS_USERNAME)
+    return value if value else None
 
 
 def get_simulation_interval_seconds() -> float:

@@ -6,16 +6,8 @@ import time
 
 import redis
 
-REDIS_RETRY_SECONDS = float(os.getenv("REDIS_RETRY_SECONDS", "5"))
-
-
-def _redis_client() -> redis.Redis:
-    return redis.Redis(
-        host=os.getenv("REDIS_HOST", "localhost"),
-        port=int(os.getenv("REDIS_PORT", "6379")),
-        password=os.getenv("REDIS_PASSWORD") or None,
-        decode_responses=True,
-    )
+from src.config import get_redis_retry_seconds
+from src.services.redis import get_redis_client
 
 
 def advance_drone_step(
@@ -24,7 +16,7 @@ def advance_drone_step(
     interval_seconds: float,
 ) -> None:
     try:
-        r = _redis_client()
+        r = get_redis_client()
         flight_key = f"flight:{flight_id}"
         raw_flight_data = r.get(flight_key)
 
@@ -46,7 +38,7 @@ def advance_drone_step(
             f"[{time.strftime('%X')}] Flight {flight_id}: Redis unavailable ({exc}). Retrying later."
         )
         scheduler_instance.enter(
-            REDIS_RETRY_SECONDS,
+            get_redis_retry_seconds(),
             1,
             advance_drone_step,
             (scheduler_instance, flight_id, interval_seconds),
@@ -130,17 +122,17 @@ def track_all_flights(interval_seconds: float, stop_event=None) -> None:
             flight_ids = set()
 
             try:
-                for key in _redis_client().scan_iter(match="flight:*"):
+                for key in get_redis_client().scan_iter(match="flight:*"):
                     parts = key.split(":")
                     if len(parts) >= 2:
                         flight_ids.add(parts[1])
             except redis.exceptions.RedisError as exc:
                 print(f"Flight tracker: Redis unavailable ({exc}). Retrying later.")
                 if stop_event is not None:
-                    if stop_event.wait(REDIS_RETRY_SECONDS):
+                    if stop_event.wait(get_redis_retry_seconds()):
                         break
                 else:
-                    time.sleep(REDIS_RETRY_SECONDS)
+                    time.sleep(get_redis_retry_seconds())
                 continue
 
             new_flight_ids = sorted(flight_ids - tracked_flight_ids)
