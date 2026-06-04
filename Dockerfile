@@ -23,8 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
 COPY --chown=appuser:appuser flask_server.py /app/
-COPY --chown=appuser:appuser flight-simulator/flight_simulator.py /app/flight-simulator/
-COPY --chown=appuser:appuser data-simulator/polygons/generate_polygon.py /app/data-simulator/polygons/
+COPY --chown=appuser:appuser src /app/src
 
 RUN chmod +x /app/entrypoint.sh
 

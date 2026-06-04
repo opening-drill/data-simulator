@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "boundaryID": "ISR-ADM0-37499698",
+      "boundaryName": "Israel",
+      "boundaryISO": "ISR",
+      "boundaryYearRepresented": "2017",
+      "dataset": "geoBoundaries gbOpen ADM0",
+      "downloadedFrom": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ISR/ADM0/geoBoundaries-ISR-ADM0-all.zip"
+    },
+    {
+      "boundaryID": "PSE-ADM0-62339095",
+      "boundaryName": "State of Palestine",
+      "boundaryISO": "PSE",
+      "boundaryYearRepresented": "2021",
+      "dataset": "geoBoundaries gbOpen ADM0",
+      "downloadedFrom": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PSE/ADM0/geoBoundaries-PSE-ADM0-all.zip",
+      "note": "Used as the source geometry covering Gaza and the West Bank."
+    }
+  ]
+}

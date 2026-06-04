@@ -191,7 +191,7 @@ def generate_and_save_forbidden_polygon():
 # ========================================================
 # Main Execution Process Task Thread (Interval: 30s)
 # ========================================================
-if __name__ == "__main__":
+def run_polygon_worker(stop_event=None):
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         func=generate_and_save_forbidden_polygon,
@@ -204,10 +204,16 @@ if __name__ == "__main__":
         "--- Background task runner initialized! Dispatching polygons every %s seconds ---",
         POLYGON_INTERVAL_SECONDS,
     )
-    
+
     try:
-        while True:
+        while stop_event is None or not stop_event.is_set():
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()
+        pass
+    finally:
+        scheduler.shutdown(wait=False)
         logger.info("--- Background task runner terminated cleanly ---")
+
+
+if __name__ == "__main__":
+    run_polygon_worker()

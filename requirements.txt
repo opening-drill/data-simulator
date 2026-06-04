@@ -1,5 +1,7 @@
 redis>=5.0.0,<6
 flask>=3.0.0,<4
+psycopg2-binary==2.9.12
+kafka-python==2.2.15
 annotated-types==0.7.0
 APScheduler==3.11.2
 certifi==2026.5.20
