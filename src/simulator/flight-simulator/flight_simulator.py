@@ -10,6 +10,28 @@ from src.config import get_redis_retry_seconds
 from src.services.redis import get_redis_client
 
 
+def _load_flight_data(raw_flight_data: str) -> dict[str, object]:
+    flight_data = json.loads(raw_flight_data)
+    if isinstance(flight_data, str):
+        flight_data = json.loads(flight_data)
+
+    if not isinstance(flight_data, dict):
+        raise TypeError("Flight payload must decode to an object.")
+
+    return flight_data
+
+
+def _get_path_coords(flight_data: dict[str, object]) -> list[object]:
+    path_coords = flight_data.get("flight_path")
+    if not path_coords:
+        path_coords = flight_data.get("path", [])
+
+    if not isinstance(path_coords, list):
+        raise TypeError("Flight path must be a list.")
+
+    return path_coords
+
+
 def advance_drone_step(
     scheduler_instance: sched.scheduler,
     flight_id: str,
@@ -30,8 +52,8 @@ def advance_drone_step(
             )
             return
 
-        flight_data = json.loads(raw_flight_data)
-        path_coords = flight_data.get("path", [])
+        flight_data = _load_flight_data(raw_flight_data)
+        path_coords = _get_path_coords(flight_data)
         current_location = flight_data.get("current_location")
     except redis.exceptions.RedisError as exc:
         print(
@@ -55,7 +77,7 @@ def advance_drone_step(
         return
 
     if not path_coords:
-        print(f"[{time.strftime('%X')}] Flight {flight_id}: path is empty.")
+        print(f"[{time.strftime('%X')}] Flight {flight_id}: flight path is empty.")
         scheduler_instance.enter(
             interval_seconds,
             1,
@@ -70,7 +92,7 @@ def advance_drone_step(
 
     if current_index == -1:
         print(
-            f"[{time.strftime('%X')}] Flight {flight_id}: current location not found in path."
+            f"[{time.strftime('%X')}] Flight {flight_id}: current location {current_location} missing or not found in path."
         )
         scheduler_instance.enter(
             interval_seconds,
@@ -83,6 +105,7 @@ def advance_drone_step(
     next_index = current_index + 1
     if next_index >= len(path_coords):
         current_time = time.strftime("%X")
+        flight_data["eta"] = current_time
         flight_data["arrival_time"] = current_time
         r.set(flight_key, json.dumps(flight_data))
         print(f"[{current_time}] Flight {flight_id} reached destination.")
