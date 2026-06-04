@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import redis
 
-from src.config import (
+from src.config.settings import (
     get_redis_connect_timeout_seconds,
     get_redis_host,
     get_redis_password,
