@@ -3,6 +3,7 @@ from urllib import error, request
 
 from src.config import get_dispatch_timeout_seconds, get_dispatch_url
 from src.config.constants import CONTENT_TYPE_JSON
+from src.services.api.auth import get_bearer_token, invalidate_bearer_token
 
 
 def dispatch_simulation_payloads(
@@ -33,12 +34,17 @@ def post_json(
     url: str,
     payload: dict[str, object],
     timeout_seconds: float,
+    *,
+    _retried_after_auth: bool = False,
 ) -> dict[str, object]:
     request_body = json.dumps(payload).encode("utf-8")
     http_request = request.Request(
         url=url,
         data=request_body,
-        headers={"Content-Type": CONTENT_TYPE_JSON},
+        headers={
+            "Content-Type": CONTENT_TYPE_JSON,
+            "Authorization": f"Bearer {get_bearer_token()}",
+        },
         method="POST",
     )
 
@@ -46,6 +52,14 @@ def post_json(
         with request.urlopen(http_request, timeout=timeout_seconds) as response:
             response_body = response.read().decode("utf-8")
     except error.HTTPError as exc:
+        if exc.code == 401 and not _retried_after_auth:
+            invalidate_bearer_token()
+            return post_json(
+                url,
+                payload,
+                timeout_seconds,
+                _retried_after_auth=True,
+            )
         error_body = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(
             f"API request failed with status {exc.code} at {url}: {error_body}"

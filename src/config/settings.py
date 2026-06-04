@@ -1,7 +1,11 @@
 import os
 
+from urllib.parse import urljoin, urlparse
+
 from src.config.constants import (
     DEFAULT_ALLOWED_POINT_MAX_ATTEMPTS,
+    DEFAULT_AUTH_PASSWORD,
+    DEFAULT_AUTH_USERNAME,
     DEFAULT_DISPATCH_TIMEOUT_SECONDS,
     DEFAULT_DISPATCH_URL,
     DEFAULT_JSON_OUTPUT_INDENT,
@@ -19,6 +23,10 @@ from src.config.constants import (
     DEFAULT_SIMULATION_INTERVAL_SECONDS,
     DEFAULT_UNUSED_EVENT_ID_MAX_ATTEMPTS,
     ENV_ALLOWED_POINT_MAX_ATTEMPTS,
+    ENV_AUTH_LOGIN_URL,
+    ENV_AUTH_PASSWORD,
+    ENV_AUTH_TOKEN,
+    ENV_AUTH_USERNAME,
     ENV_DISPATCH_TIMEOUT_SECONDS,
     ENV_DISPATCH_URL,
     ENV_JSON_OUTPUT_INDENT,
@@ -75,6 +83,29 @@ def get_allowed_point_max_attempts() -> int:
         ENV_ALLOWED_POINT_MAX_ATTEMPTS,
         DEFAULT_ALLOWED_POINT_MAX_ATTEMPTS,
     )
+
+
+def get_auth_login_url() -> str:
+    explicit = os.getenv(ENV_AUTH_LOGIN_URL)
+    if explicit:
+        return explicit.strip().rstrip("/")
+    dispatch_url = get_dispatch_url()
+    parsed = urlparse(dispatch_url)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    return urljoin(origin + "/", "api/auth/login")
+
+
+def get_auth_password() -> str:
+    return get_env_str(ENV_AUTH_PASSWORD, DEFAULT_AUTH_PASSWORD)
+
+
+def get_auth_token_override() -> str | None:
+    value = os.getenv(ENV_AUTH_TOKEN)
+    return value.strip() if value else None
+
+
+def get_auth_username() -> str:
+    return get_env_str(ENV_AUTH_USERNAME, DEFAULT_AUTH_USERNAME)
 
 
 def get_dispatch_timeout_seconds() -> float:
